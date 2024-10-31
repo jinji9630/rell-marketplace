@@ -1,0 +1,58 @@
+entity nft{
+    key id: byte_array =op_context.transaction.tx_rid;
+    mutable owner: account;
+    index owner;
+}
+
+entity nft_card {
+    key nft;
+    strength: integer;
+    health: integer;
+}
+
+function  mint_card(account){
+    val nft = create nft(account);
+    val ( health_seed , strength_seed) = extract_seeds();
+    val health = generate_health(health_seed);
+    val strength= generate_strength(strength_seed);
+    create nft_card(.nft = nft, .strength = strength , .health = health);
+}
+
+
+// Generate a random integer within a specified range
+function random(high: integer, seed: integer): integer {
+    // Ensure high is not zero to avoid division by zero
+    if (high == 0) return 0;
+
+    // Calculate the random value using the provided seed
+    return (op_context.last_block_time - op_context.block_height - op_context.op_index + seed) % high;
+}
+
+function extract_seeds(){
+    val seeds=  op_context.transaction.tx_rid.to_hex();
+    val health_seed:integer = integer.from_hex(seeds.sub(0,4));
+    val strength_seed:integer = integer.from_hex(seeds.sub(4,8));
+    return (health_seed, strength_seed);
+}
+
+function generate_health(seed : integer):integer{
+    val rand = random(30, seed)+1;
+    val baseline = 30;
+    return baseline + rand;
+}
+
+function generate_strength(seed: integer):integer{
+    val rand = random(30, seed)+1;
+    val baseline  = 50;
+    return baseline + rand *2;
+
+}
+
+
+entity listed_nft{
+    key nft : nft;
+    mutable price: big_integer;
+    index listed_by: account;
+    listed_date: timestamp = op_context.last_block_time;
+}
+

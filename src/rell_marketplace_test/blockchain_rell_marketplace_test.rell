@@ -1,0 +1,56 @@
+// Test module using the scope of blockchain rell-marketplace.
+@test module;
+
+import rell_marketplace.*;
+import lib.ft4.test.utils.{ ft_auth_operation_for };
+import lib.ft4.assets.{ get_asset_balance };
+import lib.ft4.external.accounts.{ get_accounts_by_signer };
+
+
+function test_list_and_buy_nft() {
+    val alice = rell.test.keypairs.alice;
+    val trudy = rell.test.keypairs.trudy;
+    val economy_account = rell.test.keypairs.frank;
+
+    rell.test.tx()
+        .op(create_user(alice.pub)).sign(alice)
+        .run();
+
+    val alice_account = get_last_account();
+
+    rell.test.tx()
+        .op(create_user(trudy.pub)).sign(trudy)
+        .run();
+
+    val trudy_account = get_last_account();
+
+
+    rell.test.tx()
+        .op(ft_auth_operation_for(alice.pub))
+        .op(buy_mystery_card()).sign(alice)
+        .run();
+
+    val nft = get_all_nfts()[0];
+    rell.test.tx()
+        .op(ft_auth_operation_for(alice.pub))
+        .op(list_nft(nft.nft_id.to_integer(), 20))
+        .sign(alice)
+        .run();
+
+    rell.test.tx()
+        .op(ft_auth_operation_for(trudy.pub))
+        .op(buy_nft(nft.nft_id.to_integer()))
+        .sign(trudy)
+        .run();
+
+        val nft_after_trade = get_all_nfts()[0];
+  
+    assert_equals(get_asset_balance(alice_account, dapp_meta.asset), 920);
+    assert_equals(get_asset_balance(trudy_account, dapp_meta.asset), 980);
+    assert_equals(nft_after_trade.owner_id, trudy_account.id);
+
+
+        
+         
+}
+
